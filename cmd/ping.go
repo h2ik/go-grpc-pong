@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"log"
 	"os"
@@ -12,12 +13,14 @@ import (
 	"github.com/h2ik/go-grpc-pong/pb"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
 var (
 	pongAddr string
 	interval time.Duration
+	useTLS   bool
 )
 
 var PingCmd = &cobra.Command{
@@ -30,12 +33,20 @@ var PingCmd = &cobra.Command{
 func init() {
 	PingCmd.Flags().StringVar(&pongAddr, "addr", "localhost:50051", "Address of the pong server (host:port)")
 	PingCmd.Flags().DurationVar(&interval, "interval", 1*time.Second, "Interval between pings")
+	PingCmd.Flags().BoolVar(&useTLS, "tls", false, "Use TLS when connecting to the pong server")
 }
 
 func runPing(cmd *cobra.Command, args []string) error {
 	log.Printf("Connecting to pong server at %s", pongAddr)
 
-	conn, err := grpc.NewClient(pongAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	var transportCreds grpc.DialOption
+	if useTLS {
+		transportCreds = grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{}))
+	} else {
+		transportCreds = grpc.WithTransportCredentials(insecure.NewCredentials())
+	}
+
+	conn, err := grpc.NewClient(pongAddr, transportCreds)
 	if err != nil {
 		return fmt.Errorf("failed to connect: %w", err)
 	}
