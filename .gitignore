@@ -1,0 +1,9 @@
+# Compiled binary
+go-grpc-pong
+
+# Go build cache
+*.test
+*.out
+
+# OS artifacts
+.DS_Store

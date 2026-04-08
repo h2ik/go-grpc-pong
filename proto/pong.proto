@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package pong;
+
+option go_package = "github.com/h2ik/go-grpc-pong/pb";
+
+service PongService {
+  rpc Ping(PingRequest) returns (PongResponse);
+}
+
+message PingRequest {
+  string message = 1;
+  int64  timestamp = 2;
+}
+
+message PongResponse {
+  string message   = 1;
+  int64  timestamp = 2;
+}
