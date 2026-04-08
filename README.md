@@ -47,8 +47,14 @@ This will create the `go-grpc-pong` binary in the current directory.
 ### Using Docker
 
 ```bash
-docker build -t go-grpc-pong .
+# Build the image
+docker build -t ghcr.io/h2ik/go-grpc-pong:latest .
+
+# Push to GitHub Container Registry (requires authentication)
+docker push ghcr.io/h2ik/go-grpc-pong:latest
 ```
+
+**Note**: Replace `h2ik` with your GitHub username/organization if forking this repository.
 
 ## Usage
 
@@ -94,12 +100,12 @@ The ping client sends periodic ping requests to the pong server:
 
 Run the pong server:
 ```bash
-docker run -p 50051:50051 go-grpc-pong pong --addr :50051
+docker run -p 50051:50051 ghcr.io/h2ik/go-grpc-pong:latest pong --addr :50051
 ```
 
 Run the ping client:
 ```bash
-docker run go-grpc-pong ping --addr <pong-server-address>:50051
+docker run ghcr.io/h2ik/go-grpc-pong:latest ping --addr <pong-server-address>:50051
 ```
 
 ## Kubernetes Deployment
@@ -123,7 +129,7 @@ spec:
     spec:
       containers:
       - name: pong
-        image: go-grpc-pong:latest
+        image: ghcr.io/h2ik/go-grpc-pong:latest
         args: ["pong", "--addr", ":50051"]
         ports:
         - containerPort: 50051
@@ -161,7 +167,7 @@ spec:
     spec:
       containers:
       - name: ping
-        image: go-grpc-pong:latest
+        image: ghcr.io/h2ik/go-grpc-pong:latest
         args: ["ping", "--addr", "pong-service:50051", "--interval", "2s"]
 ```
 

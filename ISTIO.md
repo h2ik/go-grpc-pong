@@ -7,6 +7,9 @@ This guide provides examples for deploying `go-grpc-pong` with Istio service mes
 - Kubernetes cluster with Istio installed
 - Istio injection enabled in target namespaces
 - `istioctl` CLI (optional, for debugging)
+- Container image available at `ghcr.io/h2ik/go-grpc-pong:latest` (or your custom registry)
+
+**Note**: All examples use `ghcr.io/h2ik/go-grpc-pong:latest`. Replace with your registry if using a fork.
 
 ## Table of Contents
 
@@ -48,7 +51,7 @@ spec:
     spec:
       containers:
       - name: pong
-        image: go-grpc-pong:latest
+        image: ghcr.io/h2ik/go-grpc-pong:latest
         args: ["pong", "--addr", ":50051"]
         ports:
         - containerPort: 50051
@@ -102,7 +105,7 @@ spec:
     spec:
       containers:
       - name: ping
-        image: go-grpc-pong:latest
+        image: ghcr.io/h2ik/go-grpc-pong:latest
         args:
         - "ping"
         - "--addr"
@@ -140,6 +143,15 @@ spec:
       protocol: GRPC
     hosts:
     - "pong.example.com"
+  - port:
+      number: 443
+      name: grpc-tls
+      protocol: GRPC
+    tls:
+      mode: SIMPLE
+      credentialName: pong-tls-cert
+    hosts:
+    - "pong.example.com"
 ---
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
@@ -162,6 +174,20 @@ spec:
           number: 50051
 ```
 
+### Create TLS Certificate (for HTTPS/port 443)
+
+To use port 443 with TLS, create a Kubernetes secret with your certificate:
+
+```bash
+# Create TLS secret with your certificate and key
+kubectl create -n istio-system secret tls pong-tls-cert \
+  --key=tls.key \
+  --cert=tls.crt
+
+# Or use cert-manager to automatically provision certificates
+# (see Istio documentation for cert-manager integration)
+```
+
 ### Test External Access
 
 ```bash
@@ -169,12 +195,17 @@ spec:
 export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway \
   -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 
-# Test with grpcurl
+# Test with grpcurl (HTTP/port 80 - plaintext)
 grpcurl -plaintext -authority pong.example.com \
   -d '{"message": "ping", "timestamp": 1234567890}' \
   $INGRESS_HOST:80 pong.PongService/Ping
 
-# Or use the ping client
+# Test with grpcurl (HTTPS/port 443 - requires TLS certificate)
+grpcurl -authority pong.example.com \
+  -d '{"message": "ping", "timestamp": 1234567890}' \
+  $INGRESS_HOST:443 pong.PongService/Ping
+
+# Or use the ping client (port 80)
 ./go-grpc-pong ping --addr $INGRESS_HOST:80
 ```
 
@@ -327,7 +358,7 @@ spec:
     spec:
       containers:
       - name: pong
-        image: go-grpc-pong:latest
+        image: ghcr.io/h2ik/go-grpc-pong:latest
         args: ["pong", "--addr", ":50051"]
         ports:
         - containerPort: 50051
@@ -420,7 +451,7 @@ spec:
     spec:
       containers:
       - name: ping
-        image: go-grpc-pong:latest
+        image: ghcr.io/h2ik/go-grpc-pong:latest
         args:
         - "ping"
         - "--addr"
